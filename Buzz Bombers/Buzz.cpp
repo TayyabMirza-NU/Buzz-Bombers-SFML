@@ -60,7 +60,7 @@ void BeeHivesManager(RenderWindow& window, Sprite HiveSprite[], bool BeeHive_exi
 
 int BeeHiveCheck(float R_bee_x, float R_bee_y, float Hive_x[], float Hive_y[], int current_R_bees, float Y_honeycomb_x[], float Y_honeycomb_y[], bool Y_honeycomb_exist[], bool BeeHive_exist[]);
 
-void KillerBeesManager(RenderWindow& window, Clock& KillerBeeNext, int& current_K_bees, const int max_K_bees, bool K_bee_exist[], Sprite KillerBeeSprite[], float K_bee_x[], float K_bee_y[], int K_beeDirection[], float R_honeycomb_x[], float R_honeycomb_y[], bool R_honeycomb_exist[]);
+void KillerBeesManager(RenderWindow& window, Clock& KillerBeeNext, int& current_K_bees, const int max_K_bees, bool K_bee_exist[], Sprite KillerBeeSprite[], float K_bee_x[], float K_bee_y[], int K_beeDirection[], float R_honeycomb_x[], float R_honeycomb_y[], bool R_honeycomb_exist[], Clock& R_bees_animation);
 
 
 void DrawingHives(RenderWindow& window, Sprite HiveSprite[], float Hive_x[], float Hive_y[], bool BeeHive_exist[], int current_R_bees);
@@ -103,6 +103,15 @@ void viewScoreboard(RenderWindow& window, Font& font) {
     int scores[100];
     int count = 0;
 
+    Texture Background;
+    if (!Background.loadFromFile("Textures/main_background.jpg")) {
+        std::cerr << "Error: Failed to load background image!" << std::endl;
+        return;
+    }
+    Sprite BG;
+    BG.setTexture(Background);
+    BG.setScale(0.32, 0.32);
+
     if (file.is_open()) {
         while (file >> lines[count] >> scores[count]) {
             count++;
@@ -129,9 +138,12 @@ void viewScoreboard(RenderWindow& window, Font& font) {
 
 
     window.clear();
+
+
     Text title("Scoreboard", font, 50);
     title.setPosition(300, 50);
     title.setFillColor(Color::Red);
+    window.draw(BG);
     window.draw(title);
 
     for (int i = 0; i < count && i < 10; ++i) {
@@ -223,6 +235,14 @@ int main() {
         return -1;
     }
 
+    Texture Background;
+    if (!Background.loadFromFile("Textures/main_background.jpg")) {
+        std::cerr << "Error: Failed to load background image!" << std::endl;
+        return -1;
+    }
+    Sprite BG;
+    BG.setTexture(Background);
+    BG.setScale(0.32,0.32);
     // Game states
     const int MAIN_MENU = 0;
     const int LEVEL_SELECT = 1;
@@ -254,10 +274,11 @@ int main() {
     for (int i = 0; i < 4; ++i) {
         menu[i].setFont(font);
         menu[i].setString(options[i]);
-        menu[i].setPosition(300, 200 + i * 50);
-        menu[i].setCharacterSize(30);
+        menu[i].setPosition(300, 200 + i * 55);
+        menu[i].setCharacterSize(40);
         menu[i].setFillColor(Color::White);
     }
+
 
 
     while (window.isOpen()) {
@@ -269,7 +290,7 @@ int main() {
             }
 
 
-
+           
 
             if (currentState == MAIN_MENU) {
 
@@ -295,6 +316,7 @@ int main() {
 
 
             else if (currentState == LEVEL_SELECT) {
+
                 if (event.type == Event::KeyPressed) {
                     if (event.key.code == Keyboard::Left) {
                         selectedLevel = (selectedLevel == 1) ? 4 : selectedLevel - 1;
@@ -317,11 +339,15 @@ int main() {
         if (currentState == MAIN_MENU) {
             window.clear();
 
+            window.draw(BG);
+
             for (int i = 0; i < 4; ++i) window.draw(menu[i]);
             window.display();
         }
         else if (currentState == LEVEL_SELECT) {
             window.clear();
+            window.draw(BG);
+
             Text levelText;
             levelText.setFont(font);
             levelText.setString("Selected Level: " + std::to_string(selectedLevel));
@@ -857,7 +883,7 @@ void Level_One(RenderWindow& window, bool& inLevel1, int& remainingLives, unsign
         Drawing_random_Combs(window, rand_combSprite, rand_comb_x, rand_comb_y, rand_comb_exist, rand_combs);
 
 
-        KillerBeesManager(window, KillerBeeNext, Kill_bees_count, max_Kill_bees, K_bee_exist, KillerBeeSprite, K_bee_x, K_bee_y, K_beeDirection, R_honeycomb_x, R_honeycomb_y, R_honeycomb_exist);
+        KillerBeesManager(window, KillerBeeNext, Kill_bees_count, max_Kill_bees, K_bee_exist, KillerBeeSprite, K_bee_x, K_bee_y, K_beeDirection, R_honeycomb_x, R_honeycomb_y, R_honeycomb_exist, R_bees_animation);
 
         humminbirdManager(window, Bird, BirdMove, BirdSprite, bird_x, bird_y, Y_honeycomb_x, Y_honeycomb_y, Y_honeycomb_exist, current_R_bees, SickStatus, R_honeycomb_x, R_honeycomb_y, R_honeycomb_exist, Kill_bees_count, score, rand_comb_x, rand_comb_y, rand_comb_exist, rand_combs);
 
@@ -1000,11 +1026,10 @@ void Level_Two(RenderWindow& window, bool& inLevel2, int& remainingLives, unsign
 
 
 
-
-    const int max_Kill_bees = 5;
+    const int max_Kill_bees = 10;
     Clock KillerBeeNext;
     Texture KillerBeeTexture;
-    KillerBeeTexture.loadFromFile("Textures/Regular_bee.png");
+    KillerBeeTexture.loadFromFile("Sprites/BeeSheet.png");
     Sprite KillerBeeSprite[max_Kill_bees];
 
     int Kill_bees_count = 0;
@@ -1020,13 +1045,18 @@ void Level_Two(RenderWindow& window, bool& inLevel2, int& remainingLives, unsign
             K_bee_x[i] = 0;
             K_bee_y[i] = boxPixelsY;
             K_beeDirection[i] = 1;
-            KillerBeeSprite[i].setScale(-1.2, 1.2);
+            KillerBeeSprite[i].setScale(-1.8, 1.8);
+            KillerBeeSprite[i].setColor(Color(0, 255, 100));
+            KillerBeeSprite[i].setTextureRect(IntRect(0, 0, boxPixelsX, boxPixelsY));
         }
         else {
             K_bee_x[i] = resolutionX;
             K_bee_y[i] = boxPixelsY;
             K_beeDirection[i] = -1;
-            KillerBeeSprite[i].setScale(1.2, 1.2);
+            KillerBeeSprite[i].setScale(1.8, 1.8);
+            KillerBeeSprite[i].setColor(Color(0, 255, 100));
+            KillerBeeSprite[i].setTextureRect(IntRect(0, 0, boxPixelsX, boxPixelsY));
+
         }
     }
 
@@ -1263,7 +1293,7 @@ void Level_Two(RenderWindow& window, bool& inLevel2, int& remainingLives, unsign
         Drawing_random_Combs(window, rand_combSprite, rand_comb_x, rand_comb_y, rand_comb_exist, rand_combs);
 
 
-        KillerBeesManager(window, KillerBeeNext, Kill_bees_count, max_Kill_bees, K_bee_exist, KillerBeeSprite, K_bee_x, K_bee_y, K_beeDirection, R_honeycomb_x, R_honeycomb_y, R_honeycomb_exist);
+        KillerBeesManager(window, KillerBeeNext, Kill_bees_count, max_Kill_bees, K_bee_exist, KillerBeeSprite, K_bee_x, K_bee_y, K_beeDirection, R_honeycomb_x, R_honeycomb_y, R_honeycomb_exist, R_bees_animation);
 
         humminbirdManager(window, Bird, BirdMove, BirdSprite, bird_x, bird_y, Y_honeycomb_x, Y_honeycomb_y, Y_honeycomb_exist, current_R_bees, SickStatus, R_honeycomb_x, R_honeycomb_y, R_honeycomb_exist, Kill_bees_count, score, rand_comb_x, rand_comb_y, rand_comb_exist, rand_combs);
 
@@ -1414,7 +1444,7 @@ void Level_Three(RenderWindow& window, bool& inLevel3, int& remainingLives, unsi
     const int max_Kill_bees = 10;
     Clock KillerBeeNext;
     Texture KillerBeeTexture;
-    KillerBeeTexture.loadFromFile("Textures/Regular_bee.png");
+    KillerBeeTexture.loadFromFile("Sprites/BeeSheet.png");
     Sprite KillerBeeSprite[max_Kill_bees];
 
     int Kill_bees_count = 0;
@@ -1430,13 +1460,18 @@ void Level_Three(RenderWindow& window, bool& inLevel3, int& remainingLives, unsi
             K_bee_x[i] = 0;
             K_bee_y[i] = boxPixelsY;
             K_beeDirection[i] = 1;
-            KillerBeeSprite[i].setScale(-1.2, 1.2);
+            KillerBeeSprite[i].setScale(-1.8, 1.8);
+            KillerBeeSprite[i].setColor(Color(0,0,0));
+            KillerBeeSprite[i].setTextureRect(IntRect(0, 0, boxPixelsX, boxPixelsY));
         }
         else {
             K_bee_x[i] = resolutionX;
             K_bee_y[i] = boxPixelsY;
             K_beeDirection[i] = -1;
-            KillerBeeSprite[i].setScale(1.2, 1.2);
+            KillerBeeSprite[i].setScale(1.8, 1.8);
+            KillerBeeSprite[i].setColor(Color(0,0,0));
+            KillerBeeSprite[i].setTextureRect(IntRect(0, 0, boxPixelsX, boxPixelsY));
+
         }
     }
 
@@ -1672,7 +1707,7 @@ void Level_Three(RenderWindow& window, bool& inLevel3, int& remainingLives, unsi
         Drawing_random_Combs(window, rand_combSprite, rand_comb_x, rand_comb_y, rand_comb_exist, rand_combs);
 
 
-        KillerBeesManager(window, KillerBeeNext, Kill_bees_count, max_Kill_bees, K_bee_exist, KillerBeeSprite, K_bee_x, K_bee_y, K_beeDirection, R_honeycomb_x, R_honeycomb_y, R_honeycomb_exist);
+        KillerBeesManager(window, KillerBeeNext, Kill_bees_count, max_Kill_bees, K_bee_exist, KillerBeeSprite, K_bee_x, K_bee_y, K_beeDirection, R_honeycomb_x, R_honeycomb_y, R_honeycomb_exist,R_bees_animation);
 
         humminbirdManager(window, Bird, BirdMove, BirdSprite, bird_x, bird_y, Y_honeycomb_x, Y_honeycomb_y, Y_honeycomb_exist, current_R_bees, SickStatus, R_honeycomb_x, R_honeycomb_y, R_honeycomb_exist, Kill_bees_count, score, rand_comb_x, rand_comb_y, rand_comb_exist, rand_combs);
 
@@ -1809,14 +1844,10 @@ void Boss_Level(RenderWindow& window, bool& inLevel4, int& remainingLives, unsig
 
 
 
-
-
-
-
     const int max_Kill_bees = 15;
     Clock KillerBeeNext;
     Texture KillerBeeTexture;
-    KillerBeeTexture.loadFromFile("Textures/Regular_bee.png");
+    KillerBeeTexture.loadFromFile("Sprites/BeeSheet.png");
     Sprite KillerBeeSprite[max_Kill_bees];
 
     int Kill_bees_count = 0;
@@ -1832,13 +1863,18 @@ void Boss_Level(RenderWindow& window, bool& inLevel4, int& remainingLives, unsig
             K_bee_x[i] = 0;
             K_bee_y[i] = boxPixelsY;
             K_beeDirection[i] = 1;
-            KillerBeeSprite[i].setScale(-1.2, 1.2);
+            KillerBeeSprite[i].setScale(-1.8, 1.8);
+            KillerBeeSprite[i].setColor(Color(0, 0, 0));
+            KillerBeeSprite[i].setTextureRect(IntRect(0, 0, boxPixelsX, boxPixelsY));
         }
         else {
             K_bee_x[i] = resolutionX;
             K_bee_y[i] = boxPixelsY;
             K_beeDirection[i] = -1;
-            KillerBeeSprite[i].setScale(1.2, 1.2);
+            KillerBeeSprite[i].setScale(1.8, 1.8);
+            KillerBeeSprite[i].setColor(Color(0, 0, 0));
+            KillerBeeSprite[i].setTextureRect(IntRect(0, 0, boxPixelsX, boxPixelsY));
+
         }
     }
 
@@ -2103,7 +2139,7 @@ void Boss_Level(RenderWindow& window, bool& inLevel4, int& remainingLives, unsig
         Drawing_random_Combs(window, rand_combSprite, rand_comb_x, rand_comb_y, rand_comb_exist, rand_combs);
 
 
-        KillerBeesManager(window, KillerBeeNext, Kill_bees_count, max_Kill_bees, K_bee_exist, KillerBeeSprite, K_bee_x, K_bee_y, K_beeDirection, R_honeycomb_x, R_honeycomb_y, R_honeycomb_exist);
+        KillerBeesManager(window, KillerBeeNext, Kill_bees_count, max_Kill_bees, K_bee_exist, KillerBeeSprite, K_bee_x, K_bee_y, K_beeDirection, R_honeycomb_x, R_honeycomb_y, R_honeycomb_exist,R_bees_animation);
 
         humminbirdManager(window, Bird, BirdMove, BirdSprite, bird_x, bird_y, Y_honeycomb_x, Y_honeycomb_y, Y_honeycomb_exist, current_R_bees, SickStatus, R_honeycomb_x, R_honeycomb_y, R_honeycomb_exist, Kill_bees_count, score, rand_comb_x, rand_comb_y, rand_comb_exist, rand_combs, power_up_x, power_up_y, powerUp_exist, powerup_count, powerUpVisible);
 
@@ -2773,7 +2809,7 @@ void updateGrid(float player_x, float player_y, float bullet_x, float bullet_y, 
 
             if (beeGridX == bulletGridX && beeGridY == bulletGridY && bulletGridY < 16) {
                 score += 100;
-                cout << score << endl;
+                //cout << score << endl;
                 bullet_exists = false;
                 R_bee_exist[i] = false;
                 bgMusic.setVolume(50);
@@ -2796,7 +2832,7 @@ void updateGrid(float player_x, float player_y, float bullet_x, float bullet_y, 
 
             if (K_beeGridX == bulletGridX && K_beeGridY == bulletGridY && bulletGridY < 16) {
                 score += 1000;
-                cout << score << endl;
+                //cout << score << endl;
                 bullet_exists = false;
                 K_bee_exist[i] = false;
                 bgMusic.setVolume(50);
@@ -2990,7 +3026,7 @@ void RegularBeesManager(RenderWindow& window, Clock& regularBeeNext, int& curren
 
 
 
-void KillerBeesManager(RenderWindow& window, Clock& KillerBeeNext, int& current_K_bees, const int max_K_bees, bool K_bee_exist[], Sprite KillerBeeSprite[], float K_bee_x[], float K_bee_y[], int K_beeDirection[], float R_honeycomb_x[], float R_honeycomb_y[], bool R_honeycomb_exist[]) {
+void KillerBeesManager(RenderWindow& window, Clock& KillerBeeNext, int& current_K_bees, const int max_K_bees, bool K_bee_exist[], Sprite KillerBeeSprite[], float K_bee_x[], float K_bee_y[], int K_beeDirection[], float R_honeycomb_x[], float R_honeycomb_y[], bool R_honeycomb_exist[], Clock& R_bees_animation) {
 
 
 
@@ -3002,6 +3038,31 @@ void KillerBeesManager(RenderWindow& window, Clock& KillerBeeNext, int& current_
     }
     float moveSpeed = 2;
     for (int i = 0; i < current_K_bees; i++) {
+
+        if (R_bees_animation.getElapsedTime() <= seconds(0.05))
+        {
+            KillerBeeSprite[i].setTextureRect(IntRect(0, 0, 32, 32)); /* code */
+            KillerBeeSprite[i].setOrigin(16, 0);
+        }
+        else if (R_bees_animation.getElapsedTime() <= seconds(0.1))
+        {
+            KillerBeeSprite[i].setTextureRect(IntRect(32, 0, 32, 32));
+            KillerBeeSprite[i].setOrigin(16, 0);
+        }
+        else if (R_bees_animation.getElapsedTime() <= seconds(0.15))
+        {
+            KillerBeeSprite[i].setTextureRect(IntRect(64, 0, 32, 32));
+            KillerBeeSprite[i].setOrigin(16, 0);
+        }
+        else if (R_bees_animation.getElapsedTime() <= seconds(0.2))
+        {
+            KillerBeeSprite[i].setTextureRect(IntRect(96, 0, 32, 32));
+            KillerBeeSprite[i].setOrigin(16, 0);
+        }
+        else
+        {
+            R_bees_animation.restart();
+        }
 
 
 
@@ -3026,13 +3087,13 @@ void KillerBeesManager(RenderWindow& window, Clock& KillerBeeNext, int& current_
                 K_beeDirection[i] = -1;
                 K_bee_y[i] += boxPixelsY;
 
-                KillerBeeSprite[i].setScale(1.2, 1.2);
+                KillerBeeSprite[i].setScale(1.8, 1.8);
             }
             else if (K_bee_x[i] <= 0 && K_beeDirection[i] == -1) {
                 K_beeDirection[i] = 1;
                 K_bee_y[i] += boxPixelsY;
 
-                KillerBeeSprite[i].setScale(-1.2, 1.2);
+                KillerBeeSprite[i].setScale(-1.8, 1.8);
             }
 
 
@@ -3058,29 +3119,29 @@ int BeeHiveCheck(float R_bee_x, float R_bee_y, float Hive_x[], float Hive_y[], i
     float Y_honeycomb_x[], float Y_honeycomb_y[], bool Y_honeycomb_exist[], bool BeeHive_exist[]) {
     int beeGridY = R_bee_y / boxPixelsY;
     int beeGridX = R_bee_x / boxPixelsX;
-    cout << R_bee_x << endl;
+    //cout << R_bee_x << endl;
     for (int i = 0; i < current_R_bees; i++) {
         if (Y_honeycomb_exist[i]) {
             int combGridX = Y_honeycomb_x[i] / boxPixelsX;
             int combGridY = Y_honeycomb_y[i] / boxPixelsY;
-            cout << "                  " << Y_honeycomb_x[i] << endl;
+            //cout << "                  " << Y_honeycomb_x[i] << endl;
 
 
-            bool leftcheck = (R_bee_x - 64 <= Y_honeycomb_x[i] && combGridY == beeGridY && cout << "left");
-            bool rightcheck = (R_bee_x + 64 >= Y_honeycomb_x[i] && combGridY == beeGridY && cout << "right");
-            bool bottomcheck = (combGridX == beeGridX && R_bee_y + 64 >= Y_honeycomb_y[i] && cout << "bottom");
+            bool leftcheck = (R_bee_x - 64 <= Y_honeycomb_x[i] && combGridY == beeGridY);
+            bool rightcheck = (R_bee_x + 64 >= Y_honeycomb_x[i] && combGridY == beeGridY);
+            bool bottomcheck = (combGridX == beeGridX && R_bee_y + 64 >= Y_honeycomb_y[i]);
 
 
             if (leftcheck && rightcheck && bottomcheck) {
-                cout << "Beehive formed at (" << beeGridX << ", " << beeGridY << ")" << endl;
+                //cout << "Beehive formed at (" << beeGridX << ", " << beeGridY << ")" << endl;
                 return 1;
             }
             else if (R_bee_x <= boxPixelsX * 3 && rightcheck && bottomcheck) {
-                cout << "Beehive formed at (" << beeGridX << ", " << beeGridY << ")" << endl;
+                //cout << "Beehive formed at (" << beeGridX << ", " << beeGridY << ")" << endl;
                 return 1;
             }
             else if (leftcheck && R_bee_x >= resolutionX - boxPixelsX * 3 && bottomcheck) {
-                cout << "Beehive formed at (" << beeGridX << ", " << beeGridY << ")" << endl;
+                //cout << "Beehive formed at (" << beeGridX << ", " << beeGridY << ")" << endl;
                 return 1;
             }
         }
@@ -3669,7 +3730,7 @@ void HummingBird_Health(float& bullet_x, float& bullet_y, float& bird_x, float& 
 
 
     if (bullet_exist && bulletGridX == birdGridX && bulletGridY == birdGridY) {
-        cout << "Hit" << endl;
+        //cout << "Hit" << endl;
         BirdHitSound.play();
         bgMusic.setVolume(50);
         Bird_hit++;
